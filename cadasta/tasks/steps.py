@@ -112,8 +112,6 @@ class MessageConsumer(bootsteps.ConsumerStep):
         else:
             logger.warn("Task already existed in db: %r", message)
 
-
-
     @staticmethod
     def _handle_result(body, message):
         from .models import BackgroundTask
