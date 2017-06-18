@@ -1,6 +1,4 @@
 from django.apps import AppConfig
-from django.conf import settings
-from kombu import Queue
 
 
 class TasksConfig(AppConfig):
@@ -20,9 +18,3 @@ class TasksConfig(AppConfig):
             # Ensure all queues are registered with proper exchanges
             for q in app.amqp.queues.values():
                 P.maybe_declare(q)
-
-            # Ensure Result queue is set up
-            P.maybe_declare(Queue(
-                settings.CELERY_RESULT_QUEUE,
-                app.backend.exchange,
-                routing_key='#'))

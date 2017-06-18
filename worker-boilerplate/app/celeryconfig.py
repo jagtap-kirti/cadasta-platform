@@ -13,27 +13,29 @@ if os.environ.get('SQS', True):
 # List of modules to import when the Celery worker starts.
 imports = ('app.tasks',)
 QUEUE_NAME = 'export'
+TASK_EXCHANGE_NAME = 'task_exchange'
+RESULT_EXCHANGE_NAME = 'result_exchange'
 
 # Exchanges
-task_default_exchange = 'task_exchange'
+task_default_exchange = TASK_EXCHANGE_NAME
 task_default_exchange_type = 'topic'
-result_exchange = 'result_exchange'
+result_exchange = RESULT_EXCHANGE_NAME
 result_exchange_type = 'topic'
 default_exchange_obj = Exchange(task_default_exchange, task_default_exchange_type)
 result_exchange_obj = Exchange(result_exchange, result_exchange_type)
 
 # Queues
-task_default_queue = 'scheduled_tasks.fifo'
-result_queue = 'result_queue.fifo'  # Custom variable
+platform_queue = 'platform.fifo'
+task_default_queue = platform_queue
 task_queues = (
     # Queue being processed by this worker
     Queue(QUEUE_NAME, default_exchange_obj, routing_key=QUEUE_NAME),
 
-    # Queue for scheduled tasks
-    Queue(task_default_queue, default_exchange_obj, routing_key='#'),
+    # Queue to send a copy of scheduled tasks back to platform
+    Queue(platform_queue, default_exchange_obj, routing_key='#'),
 
-    # Queue for results
-    Queue(result_queue, result_exchange_obj, routing_key='#'),
+    # Queue to send a copy of result messages back to platform
+    Queue(platform_queue, result_exchange_obj, routing_key='#'),
 )
 
 # Routing

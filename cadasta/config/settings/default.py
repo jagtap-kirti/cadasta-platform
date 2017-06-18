@@ -558,15 +558,13 @@ default_exchange = Exchange(TASK_EXCHANGE, CELERY_DEFAULT_EXCHANGE_TYPE)
 result_exchange = Exchange(CELERY_RESULT_EXCHANGE, CELERY_RESULT_EXCHANGE_TYPE)
 
 # Queues
-# CELERY_TASK_DEFAULT_QUEUE = 'TASK_DUPLICATE_QUEUE'
-TASK_DUPLICATE_QUEUE = 'scheduled_tasks.fifo'
-CELERY_RESULT_QUEUE = 'result_queue.fifo'  # Custom variable
+PLATFORM_QUEUE = 'platform.fifo'
 CELERY_TASK_QUEUES = (
     # Associate queues with an exchange and a specific routing key or
     # routing key pattern
-    Queue(TASK_DUPLICATE_QUEUE, default_exchange, routing_key='#'),
-    Queue(CELERY_RESULT_QUEUE, result_exchange),
     Queue('export', default_exchange, routing_key='export'),
+    Queue(PLATFORM_QUEUE, default_exchange, routing_key='#'),
+    # Queue(PLATFORM_QUEUE, result_exchange),  # BUG Having this declared breaks routing tasks to Platform queue when using RabbitMQ
 )
 
 # Routing
