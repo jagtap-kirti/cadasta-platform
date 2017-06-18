@@ -38,8 +38,12 @@ class MessageConsumer(bootsteps.ConsumerStep):
     messages into DB. NOTE: This only works if you run a celery worker
     that is NOT looking at the Result queue. Ex. "celery -A config worker"
     """
-    # def __init__(self, parent, msg_type, *args, **kwargs):
-    #     self.msg_type = msg_type
+    # TODO: This was implemented as a ConsumerStep so that we could take
+    # advantage of Celery's concurrency tooling. Unfortunately, it appears
+    # that Celery does not imnplement the concurrency settings on
+    # ConsumerSteps. For this reason, we may as well put this logic into
+    # a standard Kombu Consumer. The difficult part about doing this is
+    # implementing the Hub required for async processing.
 
     def get_consumers(self, channel):
         return [Consumer(
