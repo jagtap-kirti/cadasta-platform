@@ -7,8 +7,6 @@ from django.db.models import F
 from django.db.models.expressions import CombinedExpression, Value
 from kombu import Consumer, Queue
 
-from .models import BackgroundTask
-
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +28,9 @@ class DisableQueues(bootsteps.StartStopStep):
     def stop(self, worker):
         pass
 
+    def terminate(self, worker):
+        pass
+
 
 class MessageConsumer(bootsteps.ConsumerStep):
     """
@@ -37,27 +38,28 @@ class MessageConsumer(bootsteps.ConsumerStep):
     messages into DB. NOTE: This only works if you run a celery worker
     that is NOT looking at the Result queue. Ex. "celery -A config worker"
     """
-
-    # def __init__(self, *args, **kwargs):
-    #     print(app.app_or_default().amqp.queues)
-    #     super(MessageConsumer, self).__init__(*args, **kwargs)
+    def __init__(self, parent, msg_type, *args, **kwargs):
+        self.msg_type = msg_type
 
     def get_consumers(self, channel):
-        return [
-            Consumer(
-                channel,
-                queues=[Queue(settings.TASK_DUPLICATE_QUEUE)],
-                callbacks=[self.handle_task],
-                accept=['json']),
-            Consumer(
+        if self.msg_type == 'result':
+            logger.info("Processing queue %r", settings.CELERY_RESULT_QUEUE)
+            return [Consumer(
                 channel,
                 queues=[Queue(settings.CELERY_RESULT_QUEUE)],
                 callbacks=[self.handle_result],
-                accept=['json']),
-        ]
+                accept=['json'])]
+        logger.info("Processing queue %r", settings.TASK_DUPLICATE_QUEUE)
+        from celery.contrib import rdb; rdb.set_trace()
+        return [Consumer(
+                channel,
+                queues=[Queue(settings.TASK_DUPLICATE_QUEUE)],
+                callbacks=[self.handle_task],
+                accept=['json'])]
 
     @staticmethod
     def handle_task(body, message):
+        from .models import BackgroundTask
         logger.debug("Handling task message %r", body)
         try:
             args, kwargs, options = message.decode()
@@ -108,15 +110,14 @@ class MessageConsumer(bootsteps.ConsumerStep):
             task_id = result['task_id']
             task_qs = BackgroundTask.objects.filter(id=task_id)
 
-            MAX_ATTEMPTS = 10
-            attempts = 0
+            MAX_TIME = 5
+            start = time.time()
             while not task_qs.exists():
                 logger.debug("No corresponding task found (%r), retrying...", task_id)
-                if attempts > MAX_ATTEMPTS:
-                    logger.exception("No corresponding task found, exiting...\n%r", result)
+                if (time.time() - start) > MAX_TIME:
+                    logger.exception("No corresponding task found. Giving up.")
                     return
                 time.sleep(.25)
-                attempts += 1
 
             status = result.get('status')
             if status:

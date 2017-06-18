@@ -543,6 +543,7 @@ CELERY_BROKER_TRANSPORT = 'sqs'
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     'region': 'us-west-2',
     'queue_name_prefix': '{}-'.format(os.environ.get('QUEUE-PREFIX', 'dev')),
+    'wait_time_seconds': 20
 }
 # CELERY_RESULT_BACKEND = 'tasks.backends.ResultQueueRPC'
 # CELERYD_CONSUMER = 'tasks.consumers:ResultConsumer'
@@ -554,16 +555,17 @@ CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
 CELERY_RESULT_EXCHANGE = 'result_exchange'
 CELERY_RESULT_EXCHANGE_TYPE = 'topic'
 default_exchange = Exchange(TASK_EXCHANGE, CELERY_DEFAULT_EXCHANGE_TYPE)
-# result_exchange_obj = Exchange(CELERY_RESULT_EXCHANGE, CELERY_RESULT_EXCHANGE_TYPE)
+result_exchange = Exchange(CELERY_RESULT_EXCHANGE, CELERY_RESULT_EXCHANGE_TYPE)
 
 # Queues
+# CELERY_TASK_DEFAULT_QUEUE = 'TASK_DUPLICATE_QUEUE'
 TASK_DUPLICATE_QUEUE = 'scheduled_tasks.fifo'
-CELERY_DEFAULT_QUEUE = TASK_DUPLICATE_QUEUE
 CELERY_RESULT_QUEUE = 'result_queue.fifo'  # Custom variable
 CELERY_TASK_QUEUES = (
     # Associate queues with an exchange and a specific routing key or
     # routing key pattern
     Queue(TASK_DUPLICATE_QUEUE, default_exchange, routing_key='#'),
+    Queue(CELERY_RESULT_QUEUE, result_exchange),
     Queue('export', default_exchange, routing_key='export'),
 )
 
