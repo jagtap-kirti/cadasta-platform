@@ -545,6 +545,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     'queue_name_prefix': '{}-'.format(os.environ.get('QUEUE-PREFIX', 'dev')),
     'wait_time_seconds': 20
 }
+
 # CELERY_RESULT_BACKEND = 'tasks.backends.ResultQueueRPC'
 # CELERYD_CONSUMER = 'tasks.consumers:ResultConsumer'
 

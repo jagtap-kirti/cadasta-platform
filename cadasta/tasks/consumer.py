@@ -3,6 +3,7 @@ import logging
 
 from django.db.models import F
 from django.db.models.expressions import CombinedExpression, Value
+from kombu.mixins import ConsumerMixin
 
 from .models import BackgroundTask
 
@@ -10,10 +11,21 @@ from .models import BackgroundTask
 logger = logging.getLogger(__name__)
 
 
-class ConsumeMessage(object):
+class Worker(ConsumerMixin):
 
-    def __init__(self, message):
-        print('RECEIVED MESSAGE: {0!r}'.format(message.body))
+    def __init__(self, connection, queues):
+        self.connection = connection
+        self.queues = queues
+        super(Worker, self).__init__()
+        logger.info("Started worker %r for queues %r", self, self.queues)
+
+    def get_consumers(self, Consumer, channel):
+        return [Consumer(queues=self.queues,
+                         accept=['pickle', 'json'],
+                         callbacks=[self.process_task])]
+
+    def process_task(self, body, message):
+        logger.info('Processing message: %r', body)
         try:
             try:
                 handler = self._detect_msg_type(message)
@@ -21,7 +33,7 @@ class ConsumeMessage(object):
                 logger.exception("Unknown message type:\n%r", message)
                 raise
             try:
-                return handler(message.body, message)
+                return handler(body, message)
             except:
                 logger.exception("Failed to process message:\n%r", message)
                 raise
@@ -77,13 +89,13 @@ class ConsumeMessage(object):
         logger.debug("Handling result message %r", body)
         result = message.payload
         logger.debug('Received message: %r', result)
-        task_id = result['task_id']
-        task_qs = BackgroundTask.objects.filter(id=task_id)
+        t_id = result['task_id']
+        task_qs = BackgroundTask.objects.filter(id=t_id)
 
         MAX_TIME = 5
         start = time.time()
         while not task_qs.exists():
-            logger.debug("No corresponding task found (%r), retrying...", task_id)
+            logger.debug("No corresponding task found (%r), retrying...", t_id)
             if (time.time() - start) > MAX_TIME:
                 logger.exception("No corresponding task found. Giving up.")
                 return
