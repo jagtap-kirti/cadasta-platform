@@ -1,6 +1,7 @@
 import time
 import logging
 
+import boto3
 from django.db.models import F
 from django.db.models.expressions import CombinedExpression, Value
 from kombu.mixins import ConsumerMixin
@@ -25,20 +26,32 @@ class Worker(ConsumerMixin):
                          callbacks=[self.process_task])]
 
     def process_task(self, body, message):
-        logger.info('Processing message: %r', body)
+        logger.info('Processing message: %r', message)
         try:
-            try:
-                handler = self._detect_msg_type(message)
-            except TypeError:
-                logger.exception("Unknown message type:\n%r", message)
-                raise
-            try:
-                return handler(body, message)
-            except:
-                logger.exception("Failed to process message:\n%r", message)
-                raise
+            handler = self._detect_msg_type(message)
+            return handler(body, message)
+        except TypeError:
+            logger.exception("Unknown message type:\n%r", message)
+        except:
+            logger.exception("Failed to process message:\n%r", message)
         finally:
-            message.ack()
+            logger.info("ACKing message %r", message)
+            if self.connection.as_uri().startswith('sqs://'):
+                # HACK: Can't seem to get message.ack() to work for SQS
+                # backend. Without this hack, messages will keep
+                # re-appearing after each See https://github.com/celery/kombu/issues/758
+                return self._sqs_ack(message)
+            return message.ack()
+
+    def _sqs_ack(self, message):
+        logger.debug("Manually ACKing SQS message %r", message)
+        client = boto3.client('sqs', 'us-west-2')
+        client.delete_message(
+            QueueUrl=message.delivery_info['sqs_queue'],
+            ReceiptHandle=message.delivery_info['sqs_message']['ReceiptHandle']
+        )
+        message._state = 'ACK'
+        message.channel.qos.ack(message.delivery_tag)
 
     def _detect_msg_type(self, message):
         if 'task' in message.headers:

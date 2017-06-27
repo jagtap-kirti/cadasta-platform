@@ -21,15 +21,15 @@ class Command(BaseCommand):
     def handle(self, queue, *args, **options):
         fmt = '%(asctime)s %(name)-12s: %(levelname)-8s %(message)s'
         log_level = 40 - (options['verbosity'] * 10)
-        logging.basicConfig(level=log_level,
-                            format=fmt)
+        logging.basicConfig(level=log_level, format=fmt)
 
         # TODO: Ensure that failed processing does not requeue task into
         # work queue
         set_event_loop(Hub())
         with app.connection() as conn:
             try:
+                logger.info("Launching worker")
                 worker = Worker(conn, queues=[Queue(queue)])
                 worker.run()
             except KeyboardInterrupt:
-                print('bye bye')
+                logger.info("KeyboardInterrupt, exiting. Bye!")
