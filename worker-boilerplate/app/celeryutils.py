@@ -26,19 +26,16 @@ class Task(_Task):
 class ResultQueueRPC(RPCBackend):
 
     def _create_exchange(self, name, type='topic', delivery_mode=2):
-        # Use app's provided exchange information rather than a RPCBackend's
-        # default of an unnamed direct exchange
+        # Use app's provided exchange information rather than a
+        # RPCBackend's default of an unnamed direct exchange
         return self.Exchange(name=name, type=type, delivery_mode=delivery_mode)
 
     def store_result(self, *args, **kwargs):
-        """
-        Ensure that 'reply_to' queue is registered with exchange, so
-        that results are routed to both 'reply_to' queue and platform
-        queue.
-        """
-        request = kwargs['request']
-        reply_to = request.reply_to
+        reply_to = kwargs['request'].reply_to
         if reply_to:
+            # Ensure that 'reply_to' queue is registered with exchange,
+            # so that results are routed to both 'reply_to' queue and
+            # platform queue.
             with self.app.pool.acquire_channel(block=True) as (_, channel):
                 channel.queue_bind(
                     reply_to, self.exchange.name, routing_key=reply_to)
