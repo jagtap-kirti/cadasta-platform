@@ -8,11 +8,11 @@ app = Celery('app',
              backend='app.celeryutils.ResultQueueRPC',)
 app.config_from_object('app.celeryconfig')
 
-# TODO: Mv to signal
 p = app.amqp.producer_pool.acquire()
 try:
-    # Ensure all queues are registered with proper exchanges
-    [p.maybe_declare(q) for q in app.amqp.queues.values()]
+    p.channel.exchange_declare(
+        exchange=app.conf.result_exchange, type=app.conf.result_exchange_type)
+    [p.maybe_declare(q) for q in app.conf.task_queues]
 finally:
     p.release()
 

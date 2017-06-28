@@ -15,6 +15,7 @@ imports = ('app.tasks',)
 QUEUE_NAME = 'export'
 TASK_EXCHANGE_NAME = 'task_exchange'
 RESULT_EXCHANGE_NAME = 'result_exchange'
+PLATFORM_QUEUE_NAME = 'platform.fifo'
 
 # Exchanges
 task_default_exchange = TASK_EXCHANGE_NAME
@@ -25,17 +26,16 @@ default_exchange_obj = Exchange(task_default_exchange, task_default_exchange_typ
 result_exchange_obj = Exchange(result_exchange, result_exchange_type)
 
 # Queues
-platform_queue = 'platform.fifo'
-task_default_queue = platform_queue
+task_default_queue = PLATFORM_QUEUE_NAME
 task_queues = (
     # Queue being processed by this worker
     Queue(QUEUE_NAME, default_exchange_obj, routing_key=QUEUE_NAME),
 
     # Queue to send a copy of scheduled tasks back to platform
-    Queue(platform_queue, default_exchange_obj, routing_key='#'),
+    Queue(PLATFORM_QUEUE_NAME, default_exchange_obj, routing_key='#'),
 
     # Queue to send a copy of result messages back to platform
-    Queue(platform_queue, result_exchange_obj, routing_key='#'),
+    Queue(PLATFORM_QUEUE_NAME, result_exchange_obj, routing_key='#'),
 )
 
 # Routing

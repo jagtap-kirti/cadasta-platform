@@ -105,7 +105,7 @@ class Worker(ConsumerMixin):
         t_id = result['task_id']
         task_qs = BackgroundTask.objects.filter(id=t_id)
 
-        MAX_TIME = 5
+        MAX_TIME = 1
         start = time.time()
         while not task_qs.exists():
             logger.debug("No corresponding task found (%r), retrying...", t_id)
