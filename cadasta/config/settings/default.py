@@ -544,7 +544,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     'region': 'us-west-2',
     'queue_name_prefix': '{}-'.format(os.environ.get('QUEUE-PREFIX', 'dev')),
     'wait_time_seconds': 20,
-    'visibility_timeout': 5,
+    'visibility_timeout': 20,
 }
 
 # CELERY_RESULT_BACKEND = 'tasks.backends.ResultQueueRPC'
@@ -566,7 +566,10 @@ CELERY_TASK_QUEUES = (
     # routing key pattern
     Queue('export', default_exchange, routing_key='export'),
     Queue(PLATFORM_QUEUE, default_exchange, routing_key='#'),
-    # Queue(PLATFORM_QUEUE, result_exchange),  # BUG Having this declared breaks routing tasks to Platform queue when using RabbitMQ
+    # BUG:  Having this declared breaks routing tasks to Platform queue
+    #       when using RabbitMQ. Perhaps we can only have a single
+    #       exchange for each queue.
+    # Queue(PLATFORM_QUEUE, result_exchange),
 )
 
 # Routing
