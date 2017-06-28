@@ -2,6 +2,7 @@ import time
 import logging
 
 import boto3
+from django.conf import settings
 from django.db.models import F
 from django.db.models.expressions import CombinedExpression, Value
 from kombu.mixins import ConsumerMixin
@@ -45,8 +46,8 @@ class Worker(ConsumerMixin):
 
     def _sqs_ack(self, message):
         logger.debug("Manually ACKing SQS message %r", message)
-        client = boto3.client('sqs', 'us-west-2')
-        client.delete_message(
+        region = settings.CELERY_BROKER_TRANSPORT_OPTIONS['region']
+        boto3.client('sqs', region).delete_message(
             QueueUrl=message.delivery_info['sqs_queue'],
             ReceiptHandle=message.delivery_info['sqs_message']['ReceiptHandle']
         )
