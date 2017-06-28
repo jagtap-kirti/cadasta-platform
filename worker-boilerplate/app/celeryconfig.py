@@ -3,10 +3,11 @@ from kombu import Exchange, Queue
 
 if os.environ.get('SQS', True):
     # Broker settings.
+    prefix = os.environ.get('QUEUE_PREFIX', 'dev')
     broker_transport = 'sqs'
     broker_transport_options = {
         'region': 'us-west-2',
-        'queue_name_prefix': '{}-'.format(os.environ.get('QUEUE_PREFIX', 'dev'))
+        'queue_name_prefix': '{}-'.format(prefix)
     }
     worker_prefetch_multiplier = 0  # https://github.com/celery/celery/issues/3712  # noqa
 
@@ -22,8 +23,10 @@ task_default_exchange = TASK_EXCHANGE_NAME
 task_default_exchange_type = 'topic'
 result_exchange = RESULT_EXCHANGE_NAME
 result_exchange_type = 'topic'
-default_exchange_obj = Exchange(task_default_exchange, task_default_exchange_type)
-result_exchange_obj = Exchange(result_exchange, result_exchange_type)
+default_exchange_obj = Exchange(
+    task_default_exchange, task_default_exchange_type)
+result_exchange_obj = Exchange(
+    result_exchange, result_exchange_type)
 
 # Queues
 task_default_queue = PLATFORM_QUEUE_NAME

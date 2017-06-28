@@ -16,18 +16,23 @@ class TestExchangeConfiguration(unittest.TestCase):
         exch_type = self.channel.typeof(app.conf.task_default_exchange).type
         self.assertEqual(exch_type, 'topic')
 
-    def test_result_exchange_type(self):
+    def test_result_exchange_details(self):
         """ Ensure result exchange is topic exchange """
-        exch_type = self.channel.typeof(app.conf.result_exchange).type
-        self.assertEqual(exch_type, 'topic')
+        exchange = self.channel.state.exchanges[app.conf.result_exchange]
+        self.assertEqual(exchange, {
+            'type': 'topic',
+            'auto_delete': False,
+            'table': [('#', '^.*?$', 'platform.fifo')],
+            'durable': True,
+            'arguments': {}
+        })
 
     def test_default_exchange_routing(self):
         """ Ensure default exchange routes tasks to multiple queues """
         exchange = app.conf.task_default_exchange
         queues = self.channel.typeof(exchange).lookup(
             self.channel.get_table(exchange),
-            exchange, 'export', app.conf.task_default_queue,
-        )
+            exchange, 'export', app.conf.task_default_queue)
         self.assertEqual(len(queues), 2)
 
     def test_result_exchange_routing(self):
@@ -37,8 +42,7 @@ class TestExchangeConfiguration(unittest.TestCase):
             'foo', exchange, routing_key='foo')
         queues = self.channel.typeof(exchange).lookup(
             self.channel.get_table(exchange),
-            exchange, 'foo', app.conf.task_default_queue,
-        )
+            exchange, 'foo', app.conf.task_default_queue)
         self.assertEqual(len(queues), 2)
 
 

@@ -9,9 +9,14 @@ def setup_exchanges(**kwargs):
     try:
         # Result Exchange
         p.channel.exchange_declare(
-            exchange=app.conf.result_exchange, type=app.conf.result_exchange_type)
+            exchange=app.conf.result_exchange,
+            type=app.conf.result_exchange_type,
+            # Worker will throw error if it finds a non-durable exchange
+            # registered with channel when running exchange_declare.
+            durable=True)
         p.channel.queue_bind(
-            app.conf.PLATFORM_QUEUE_NAME, app.conf.result_exchange,
+            queue=app.conf.PLATFORM_QUEUE_NAME,
+            exchange=app.conf.result_exchange,
             routing_key='#')
         # Standard Exchange
         [p.maybe_declare(q) for q in app.conf.task_queues]
