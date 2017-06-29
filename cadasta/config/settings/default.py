@@ -538,15 +538,8 @@ ES_HOST = 'localhost'
 ES_PORT = '9200'
 ES_MAX_RESULTS = 10000
 
-# Connection
-CELERY_BROKER_TRANSPORT = 'sqs'
-CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'region': 'us-west-2',
-    'queue_name_prefix': '{}-'.format(os.environ.get('QUEUE-PREFIX', 'dev')),
-    'wait_time_seconds': 20,
-    'visibility_timeout': 20,
-}
 
+# Async Tooling
 # Exchanges
 TASK_EXCHANGE = 'task_exchange'
 CELERY_DEFAULT_EXCHANGE = TASK_EXCHANGE
