@@ -1,4 +1,3 @@
-import time
 import logging
 
 import boto3
@@ -32,9 +31,9 @@ class Worker(ConsumerMixin):
             handler = self._detect_msg_type(message)
             return handler(body, message)
         except TypeError:
-            logger.exception("Unknown message type:\n%r", message)
+            logger.exception("Unknown message type: %r", message)
         except:
-            logger.exception("Failed to process message:\n%r", message)
+            logger.exception("Failed to process message: %r", message)
         finally:
             logger.info("ACKing message %r", message)
             if self.connection.as_uri().startswith('sqs://'):
@@ -73,13 +72,6 @@ class Worker(ConsumerMixin):
             **{k: v for k, v in message.headers.items()
                if k in option_keys and v not in (None, [None, None])})
 
-        # Ensure chained followup tasks contain proper data
-        chain_parent_id = task_id[:]
-        chain = options.get('chain') or []
-        for t in chain[::-1]:  # Chain array comes in reverse order
-            t['parent_id'] = chain_parent_id
-            chain_parent_id = t['options']['task_id']
-
         # TODO: Add support for grouped tasks
         # TODO: Add support tasks gednerated by workers
         _, created = BackgroundTask.objects.get_or_create(
@@ -106,14 +98,8 @@ class Worker(ConsumerMixin):
         t_id = result['task_id']
         task_qs = BackgroundTask.objects.filter(id=t_id)
 
-        MAX_TIME = 1
-        start = time.time()
-        while not task_qs.exists():
-            logger.debug("No corresponding task found (%r), retrying...", t_id)
-            if (time.time() - start) > MAX_TIME:
-                logger.exception("No corresponding task found. Giving up.")
-                return
-            time.sleep(.25)
+        if not task_qs.exists():
+            return logger.error("No corresponding task found (%r)", t_id)
 
         status = result.get('status')
         if status:
@@ -123,9 +109,9 @@ class Worker(ConsumerMixin):
         if status in BackgroundTask.DONE_STATES:
             task_qs.update(output=result)
         else:
-            assert isinstance(result, dict), (
-                "Malformed result data, expecting a dict"
-            )
+            if not isinstance(result, dict):
+                msg = "Malformed result data, expecting a dict, got %s (%r)"
+                return logger.error(msg, type(result), result)
             log = result.get('log')
             if log:
                 task_qs.update(log=CombinedExpression(
