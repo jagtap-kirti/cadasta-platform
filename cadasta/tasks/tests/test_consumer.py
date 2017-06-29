@@ -1,13 +1,14 @@
 from collections import namedtuple
 from unittest.mock import patch, MagicMock, call
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.db.models import F
 from django.db.models.expressions import CombinedExpression, Value
 
 from tasks.consumer import Worker
 
 
+@override_settings(CELERY_BROKER_TRANSPORT_OPTIONS={'region': 'us-west-2'})
 class TestConsumers(TestCase):
 
     def setUp(self):
