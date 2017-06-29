@@ -547,9 +547,6 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     'visibility_timeout': 20,
 }
 
-# CELERY_RESULT_BACKEND = 'tasks.backends.ResultQueueRPC'
-# CELERYD_CONSUMER = 'tasks.consumers:ResultConsumer'
-
 # Exchanges
 TASK_EXCHANGE = 'task_exchange'
 CELERY_DEFAULT_EXCHANGE = TASK_EXCHANGE

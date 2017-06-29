@@ -39,7 +39,8 @@ class Worker(ConsumerMixin):
             if self.connection.as_uri().startswith('sqs://'):
                 # HACK: Can't seem to get message.ack() to work for SQS
                 # backend. Without this hack, messages will keep
-                # re-appearing after each See https://github.com/celery/kombu/issues/758
+                # re-appearing after the visibility_timeout expires.
+                # See https://github.com/celery/kombu/issues/758
                 return self._sqs_ack(message)
             return message.ack()
 
