@@ -1,12 +1,11 @@
 from collections import namedtuple
 from unittest.mock import patch, MagicMock, call
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.db.models import F
 from django.db.models.expressions import CombinedExpression, Value
 
 from tasks.consumer import Worker
-from tasks.tests.factories import BackgroundTaskFactory
 
 
 class TestConsumers(TestCase):
